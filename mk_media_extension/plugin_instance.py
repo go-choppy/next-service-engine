@@ -73,6 +73,7 @@ Arguments:
                  plugin_name=self.plugin_name, plugin_kwargs=kwargs_str)
             self.logger.debug("Generate code for %s error: %s" % (self.plugin_name, str(err)))
             self.logger.debug(traceback.format_exc())
+            print(traceback.format_exc())
             self.logger.warning("Generate code for %s error: %s" % (self.plugin_name, str(err)))
             code_lst = [code, ]
             success = False

@@ -12,17 +12,16 @@ from mk_media_extension.utils import (get_candidate_name, check_dir,
 
 
 class Process:
-    def __init__(self, command_dir=None, workdir='/tmp/', main_program_name='run.sh'):
+    def __init__(self, command_dir, workdir='/tmp/', main_program_name='run.sh'):
         self.logger = logging.getLogger('choppy-media-extension.process_mgmt.Process')
-        if command_dir:
-            self.command_dir = command_dir
-            command_dirname = os.path.basename(command_dir)
+        self.command_dir = command_dir
+        command_dirname = os.path.basename(command_dir)
 
-            self.workdir = os.path.join(workdir, '%s_%s' % (command_dirname, get_candidate_name()))
-            self.main_program = os.path.join(self.workdir, main_program_name)
-            self.logger.debug('Main program: %s' % self.main_program)
-            self.logger.debug('Command directory: %s' % self.command_dir)
-            self.logger.debug('Working directory: %s' % self.workdir)
+        self.workdir = os.path.join(workdir, '%s_%s' % (command_dirname, get_candidate_name()))
+        self.main_program = os.path.join(self.workdir, main_program_name)
+        self.logger.debug('Main program: %s' % self.main_program)
+        self.logger.debug('Command directory: %s' % self.command_dir)
+        self.logger.debug('Working directory: %s' % self.workdir)
 
     def _find_file(self, directory, file_pattern):
         all_files = []
@@ -72,6 +71,60 @@ class Process:
         copy_and_overwrite(self.command_dir, self.workdir)
 
     def run_command(self, domain='127.0.0.1', port='8000', **kwargs):
+        raise NotImplementedError("Process subclass must implement run_command method")
+
+    def get_process(self, process_id):
+        raise NotImplementedError("Process subclass must implement get_process method.")
+
+    def get_output(self, process_id):
+        raise NotImplementedError("Process subclass must implement get_output method.")
+
+    def stop_process(self, process_id):
+        raise NotImplementedError("Process subclass must implement stop_process method.")
+
+    def clean_process(self):
+        raise NotImplementedError("Process subclass must implement clean_process method.")
+
+
+class DockerProcess(Process):
+    def __init__(self, *args, **kwargs):
+        return super(DockerProcess, self).__init__(*args, **kwargs)
+
+    def run_command(self, uuid, domain='127.0.0.1', port='8000', **kwargs):
+        self._set_env()
+        self._gen_config(self.workdir, **kwargs)
+        self._exist_command()
+
+        if domain != '127.0.0.1' or domain != 'localhost':
+            domain = '0.0.0.0'
+        else:
+            domain = '127.0.0.1'
+
+        args = ['-d', self.workdir, '-p', port, '-H', domain]
+        response = self.process_manager.add_watcher(uuid, self.main_program, args=args)
+        if response:
+            return uuid
+        else:
+            return False
+
+    def get_output(self, process_id):
+        pass
+
+    def stop_process(self, process_id):
+        return self.process_manager.stop(watcher=process_id, waiting=True)
+
+    def restart_process(self, process_id):
+        return self.process_manager.restart(watcher=process_id, waiting=True)
+
+    def clean_process(self):
+        pass
+
+
+class ChildProcess(Process):
+    def __init__(self, *args, **kwargs):
+        return super(ChildProcess, self).__init__(*args, **kwargs)
+
+    def run_command(self, uuid, domain='127.0.0.1', port='8000', **kwargs):
         self._set_env()
         self._gen_config(self.workdir, **kwargs)
         self._exist_command()
@@ -115,7 +168,7 @@ class Process:
         if process:
             process.terminate()
 
-    def clean_processs(self):
+    def clean_process(self):
         process_id = os.getpid()
         process = self.get_process(process_id)
         if process:

@@ -12,11 +12,12 @@
 import logging
 from flask_restplus import Resource
 from flask import current_app
-from .parameters import plugin_get_args, plugin_post_args
-from .parameters import plugin_post_fields
 from mk_media_extension.plugin import get_plugins, get_internal_plugins
 from mk_media_extension.plugin_instance import PluginInstance
+
 from . import api
+from .parameters import plugin_get_args, plugin_post_args
+from .parameters import plugin_post_fields
 
 
 logger = logging.getLogger(__file__)

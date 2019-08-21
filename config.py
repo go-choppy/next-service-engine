@@ -1,11 +1,11 @@
 # -*- coding:utf-8 -*-
 import os
-import sys
 
 PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 
 
 def get_oss_bin():
+    import sys
     oss_bin = ''
     if sys.platform == 'darwin':
         oss_bin = os.path.join(os.path.dirname(__file__), "mk_media_extension", "lib", 'ossutilmac64')
@@ -43,10 +43,9 @@ class BaseConfig(object):
     }
 
     ENABLED_MODULES = (
-        'pm2',
+        'api',
         'kong',
         'plugin',
-        'api',
     )
 
     SWAGGER_UI_JSONEDITOR = True
@@ -84,6 +83,15 @@ class BaseConfig(object):
 
     STATIC_ROOT = os.path.join(PROJECT_ROOT, 'static')
     STATIC_URL = 'http://localhost:5000'
+
+    # Docker
+    ENABLE_DOCKER = True
+    # unix:///var/run/docker.sock or tcp://127.0.0.1:1234
+    DOCKER_ENGINE = {
+        'localhost': 'unix:///var/run/docker.sock',
+        # 'worker01': 'tcp://192.192.192.1:8000',
+    }
+    DOCKER_TIMEOUT = 15
 
 
 class ProductionConfig(BaseConfig):

@@ -12,7 +12,6 @@ import logging
 import collections
 import pkg_resources
 from mk_media_extension.docker_mgmt import Docker
-from mk_media_extension.process_mgmt import Process
 from mk_media_extension.utils import (check_dir, copy_and_overwrite,
                                       BashColors, get_candidate_name,
                                       find_free_port, get_local_abs_fpath)
@@ -104,6 +103,16 @@ class BasePlugin:
         self.wait_server_seconds = config.get("WAIT_SERVER_SECONDS")
         self.backoff_factor = config.get("BACKOFF_FACTOR")
         self.static_url = config.get("STATIC_URL")
+        self.enable_docker = config.get("ENABLE_DOCKER")
+
+        # Process Manager
+        if self.enable_docker:
+            from mk_media_extension.process_mgmt import DockerProcess
+            self.Process = DockerProcess
+        else:
+            from mk_media_extension.process_mgmt import ChildProcess
+            self.circus = None
+            self.Process = ChildProcess
 
         self.logger = logging.getLogger('choppy.mk-media-extension.plugin')
 
@@ -689,18 +698,17 @@ class BasePlugin:
         pass
 
     def docker(self):
-        if self.is_server:
-            if self.docker_image:
-                docker = Docker()
-                port = find_free_port()
-                docker_obj = docker.run_docker(self.docker_image, {}, ports={'3838/tcp': port})
-                id = docker_obj.id
-                access_url = '{protocol}://{domain}:{port}'.format(protocol=self.protocol,
-                                                                   domain=self.domain,
-                                                                   port=port)
-                return id, access_url
-            else:
-                return None, None
+        if self.docker_image:
+            docker = Docker()
+            port = find_free_port()
+            docker_obj = docker.run_docker(self.docker_image, {}, ports={'3838/tcp': port})
+            id = docker_obj.id
+            access_url = '{protocol}://{domain}:{port}'.format(protocol=self.protocol,
+                                                               domain=self.domain,
+                                                               port=port)
+            return id, access_url
+        else:
+            return None, None
 
     def update_context(self, **kwargs):
         new_context = {}
@@ -714,22 +722,21 @@ class BasePlugin:
         return new_context
 
     def server(self):
-        if self.is_server:
-            if self.plugin_dir:
-                src_code_dir = os.path.join(self.plugin_dir, self.plugin_name)
-                server_root = os.path.join(self.net_dir, 'server')
-                check_dir(server_root, skip=True)
+        if self.plugin_dir:
+            src_code_dir = os.path.join(self.plugin_dir, self.plugin_name)
+            server_root = os.path.join(self.net_dir, 'server')
+            check_dir(server_root, skip=True)
 
-                process = Process(command_dir=src_code_dir, workdir=server_root)
-                port = find_free_port()
-                updated_context = self.update_context(**self.context)
-                process_id = process.run_command(domain=self.domain, port=port, **updated_context)
-                access_url = '{protocol}://{domain}:{port}'.format(protocol=self.protocol,
-                                                                   domain=self.domain,
-                                                                   port=port)
-                return process_id, access_url, process.workdir
-            else:
-                return None, None, None
+            process = self.Process(command_dir=src_code_dir, workdir=server_root)
+            port = find_free_port()
+            updated_context = self.update_context(**self.context)
+            process_id = process.run_command(self.metadata.get("command_md5"), domain=self.domain, port=port, **updated_context)
+            access_url = '{protocol}://{domain}:{port}'.format(protocol=self.protocol,
+                                                               domain=self.domain,
+                                                               port=port)
+            return process_id, access_url, process.workdir
+        else:
+            return None, None, None
 
     def _md5(self, string):
         md5 = hashlib.md5()
