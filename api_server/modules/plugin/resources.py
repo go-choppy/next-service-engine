@@ -12,7 +12,7 @@
 import logging
 from flask_restplus import Resource
 from flask import current_app
-from next_service_engine.plugin import get_plugins, get_internal_plugins
+from next_service_engine.plugin import get_plugins
 from next_service_engine.plugin_instance import PluginInstance
 
 from . import api
@@ -38,8 +38,7 @@ class Plugin(Resource):
         show_instance = args.show_instance
         if not show_instance:
             installed_plugins = get_plugins()
-            internal_plugins = get_internal_plugins()
-            plugins = list(installed_plugins.keys()) + list(internal_plugins.keys())
+            plugins = list(installed_plugins.keys())
             resp = {
                 "message": "Success",
                 "data": plugins

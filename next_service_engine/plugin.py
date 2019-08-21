@@ -1093,11 +1093,6 @@ class BasePlugin:
             return ''
 
 
-def get_internal_plugins():
-    from next_service_engine.plugins import internal_plugins
-    return internal_plugins
-
-
 def get_plugins():
     """
     Return a dict of all installed Plugins by name.

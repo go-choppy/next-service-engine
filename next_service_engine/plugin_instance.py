@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 
 import logging
-from next_service_engine.plugin import get_plugins, get_internal_plugins
+from next_service_engine.plugin import get_plugins
 from next_service_engine.exceptions import ValidationError
 from next_service_engine.plugin import BasePlugin
 
@@ -22,7 +22,6 @@ class PluginInstance:
         """
         self.logger = logging.getLogger(__name__)
         self.installed_plugins = get_plugins()
-        self.internal_plugins = get_internal_plugins()
 
         self.plugin_name = plugin_name
         self.plugin_kwargs = plugin_kwargs
@@ -30,21 +29,17 @@ class PluginInstance:
         self.config = config
 
     def load_plugin(self, name, context):
-        InternalPlugin = self.internal_plugins.get(name)
-        if InternalPlugin:
-            plugin = InternalPlugin(context, self.net_dir, self.config)
-        else:
-            if name not in self.installed_plugins:
-                raise ValidationError('The "{0}" plugin is not installed'.format(name))
+        if name not in self.installed_plugins:
+            raise ValidationError('The "{0}" plugin is not installed'.format(name))
 
-            Plugin = self.installed_plugins[name].load()
+        Plugin = self.installed_plugins[name].load()
 
-            if not issubclass(Plugin, BasePlugin):
-                raise ValidationError('{0}.{1} must be a subclass of {2}.{3}'.format(
-                                      Plugin.__module__, Plugin.__name__, BasePlugin.__module__,
-                                      BasePlugin.__name__))
+        if not issubclass(Plugin, BasePlugin):
+            raise ValidationError('{0}.{1} must be a subclass of {2}.{3}'.format(
+                                  Plugin.__module__, Plugin.__name__, BasePlugin.__module__,
+                                  BasePlugin.__name__))
 
-            plugin = Plugin(context, self.net_dir, self.config)
+        plugin = Plugin(context, self.net_dir, self.config)
         return plugin
 
     def generate(self):
