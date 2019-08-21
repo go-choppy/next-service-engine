@@ -2,7 +2,7 @@
 .env
 .DS_Store
 __pycache__
-mk_media_extension.egg-info
+next_service_engine.egg-info
 .vscode-counter
 .eggs/
 .Rhistory

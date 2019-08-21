@@ -1,10 +1,10 @@
-# {% set data = load_setup_py_data() %}
-{% set version = '0.1.3' %}
-{% set url = 'http://choppy.3steps.cn' %}
-{% set description = 'Display dynamic plot or more multimedia content in markdown.' %}
+{% set data = load_setup_py_data() %}
+{% set version = data.get('version') %}
+{% set url = data.get('url') %}
+{% set description = data.get('description') %}
 
 package:
-  name: mk-media-extension
+  name: next_service_engine
   version: {{ version }}
 
 
@@ -15,7 +15,7 @@ source:
 build:
   include_recipe: True
   entry_points:
-    - mk_media_extension = mk_media_extension.extension:ChoppyPluginExtension
+    - next_service_engine = api_server.server:run_server
 
 
 requirements:
@@ -35,29 +35,10 @@ requirements:
     - sqlalchemy
     - docker-py
     - psutil
-    - r-devtools
-    - r-dplyr
-    - r-shiny
-    - r-plotly
-    - r-ggpubr
-    - r-rcolorbrewer
-    - r-shinybs
-    - r-shinyjs
-    - r-shinydashboard
-    - r-ggvis
-    - r-ggplot2
-    - r-colourpicker
-    - r-d3heatmap
-    - r-shinycssloaders
-    # Choppy Channel
-    - r-configr
-    - r-scatterd3
-    - r-ggcorrplot
-    - r-upsetr
 
 # test:
 #   imports:
-#     - mk_media_extension
+#     - next_service_engine
 
 about:
   home: {{ url }}

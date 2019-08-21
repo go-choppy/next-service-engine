@@ -1,14 +1,14 @@
-.. Choppy Media Extension documentation master file, created by
+.. Next Service Engine documentation master file, created by
    sphinx-quickstart on Tue Jul  2 15:55:57 2019.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Choppy Media Extension's documentation!
+Welcome to Next Service Engine's documentation!
 ==================================================
 
 Summary
 ~~~~~~~
-Choppy-media-extension is an extension for Python-Markdown.
+Next-service-engine is an extension for Python-Markdown.
 It can launch dynamic plot or preprocess multimedia.
 
 Dependencies
@@ -31,7 +31,7 @@ Installation
 ~~~~~~~~~~~~
 ::
 
-  pip install mk-media-extension
+  pip install next-service-engine
 
 
 Plugins

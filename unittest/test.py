@@ -1,4 +1,4 @@
-from mk_media_extension.extension import ChoppyPluginExtension
+from next_service_engine.extension import ChoppyPluginExtension
 
 
 def test(text):

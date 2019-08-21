@@ -8,9 +8,9 @@ def get_oss_bin():
     import sys
     oss_bin = ''
     if sys.platform == 'darwin':
-        oss_bin = os.path.join(os.path.dirname(__file__), "mk_media_extension", "lib", 'ossutilmac64')
+        oss_bin = os.path.join(os.path.dirname(__file__), "next_service_engine", "lib", 'ossutilmac64')
     else:
-        oss_bin = os.path.join(os.path.dirname(__file__), "mk_media_extension", "lib", 'ossutil64')
+        oss_bin = os.path.join(os.path.dirname(__file__), "next_service_engine", "lib", 'ossutil64')
     return oss_bin
 
 

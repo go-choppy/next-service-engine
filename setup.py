@@ -1,6 +1,6 @@
 import os
 from setuptools import setup
-from mk_media_extension.version import get_version
+from next_service_engine.version import get_version
 
 
 def get_packages(package):
@@ -11,18 +11,18 @@ def get_packages(package):
 
 
 setup(
-    name='mk-media-extension',
+    name='next-service-engine',
     version=get_version(),
-    description='Display dynamic plot or more multimedia content in markdown.',
+    description='Next Service Engine for Interactive Plot, Web Component, Microservice etc.',
     long_description=open('README.md').read(),
     author='Jingcheng Yang',
     author_email='yjcyxky@163.com',
-    url='http://choppy.3steps.cn/go-choppy/mk-media-extension',
+    url='http://choppy.3steps.cn/go-choppy/next-service-engine',
     zip_safe=False,
     platforms='any',
     include_package_data=True,
-    packages=get_packages("mk_media_extension"),
-    keywords='markdown, dynamic plot, multimedia',
+    packages=get_packages("next_service_engine"),
+    keywords='Service Engine, Interactive Plot, Multimedia, Web Component',
     install_requires=[
         'plotly>=3.6.1',
         'bokeh>=1.0.4',
@@ -44,11 +44,8 @@ setup(
         'Programming Language :: Python :: 3',
     ],
     entry_points={
-        'markdown.extensions': [
-            'mk_media_extension = mk_media_extension.extension:ChoppyPluginExtension'
-        ],
         "console_scripts": [
-            "plugin-server = api_server.server:run_server"
+            "next-service-engine = api_server.server:run_server"
         ],
     }
 )

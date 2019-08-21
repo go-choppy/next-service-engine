@@ -12,8 +12,8 @@
 import logging
 from flask_restplus import Resource
 from flask import current_app
-from mk_media_extension.plugin import get_plugins, get_internal_plugins
-from mk_media_extension.plugin_instance import PluginInstance
+from next_service_engine.plugin import get_plugins, get_internal_plugins
+from next_service_engine.plugin_instance import PluginInstance
 
 from . import api
 from .parameters import plugin_get_args, plugin_post_args

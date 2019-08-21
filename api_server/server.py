@@ -4,7 +4,7 @@
     api_server.server
     ~~~~~~~~~~~~~~~~~
 
-    Launch a api server for mk_media_extension.
+    Launch a api server for next_service_engine.
 
     :copyright: © 2019 by the Choppy team.
     :license: AGPL, see LICENSE.md for more details.

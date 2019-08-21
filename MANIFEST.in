@@ -1,8 +1,8 @@
 include LICENSE.txt
 include README.md
 include requirements.txt
-recursive-include mk_media_extension *
+recursive-include next_service_engine *
 recursive-exclude * __pycache__
 recursive-exclude * *.pyc
 recursive-exclude * *.pyo
-recursive-exclude mk_media_extension.egg-info *
+recursive-exclude next_service_engine.egg-info *

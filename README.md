@@ -4,12 +4,12 @@
 >
 > Date: 2018-12-13
 
-# Choppy Media Extension
+# Next Service Engine
 
 ## Summary
 Display dynamic plot or more multimedia content in markdown.
 
-Choppy-media-extension is an extension for Python-Markdown. It can launch dynamic plot or preprocess multimedia.
+Next-service-engine is an extension for Python-Markdown. It can launch dynamic plot or preprocess multimedia.
 
 ## Dependencies
 
@@ -28,7 +28,7 @@ Such as @plugin-name(arg1=value, arg2=value)
 ## Installation
 
 ```
-pip install mk-media-extension
+pip install next-service-engine
 ```
 
 ## Plugins
