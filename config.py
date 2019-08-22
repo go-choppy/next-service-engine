@@ -44,7 +44,7 @@ class BaseConfig(object):
 
     ENABLED_MODULES = (
         'api',
-        'kong',
+        # 'kong',
         'plugin',
     )
 
@@ -70,14 +70,13 @@ class BaseConfig(object):
     PROXY_ADMIN_URL = 'http://localhost:8001'
     REVERSE_PROXY_URL = 'http://localhost:8000'
 
-    # Plugin Engine
+    # Next Service Engine
     SYNC_OSS = True
     SYNC_HTTP = True
     SYNC_FTP = True
     TARGET_FSIZE = 10
     PROTOCOL = 'http'
     DOMAIN = 'localhost'
-    ENABLE_IFRAME = True
     WAIT_SERVER_SECONDS = 5
     BACKOFF_FACTOR = 3
 
@@ -85,13 +84,16 @@ class BaseConfig(object):
     STATIC_URL = 'http://localhost:5000'
 
     # Docker
-    ENABLE_DOCKER = True
+    ENABLE_DOCKER = False
     # unix:///var/run/docker.sock or tcp://127.0.0.1:1234
     DOCKER_ENGINE = {
         'localhost': 'unix:///var/run/docker.sock',
         # 'worker01': 'tcp://192.192.192.1:8000',
     }
     DOCKER_TIMEOUT = 15
+
+    # Swagger
+    ENABLE_SWAGGER = False
 
 
 class ProductionConfig(BaseConfig):
@@ -115,8 +117,22 @@ class ProductionConfig(BaseConfig):
 class DevelopmentConfig(BaseConfig):
     ENV = 'development'
     DEBUG = True
-    DOMAIN = '192.168.199.227'
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///%s' % (os.path.join(PROJECT_ROOT, "example.db"))
+    DOMAIN = '192.168.0.12'
+    ENABLE_SWAGGER = True
+    # MYSQL
+    DB_USER = 'root'
+    DB_PASSWORD = 'HJJ@nordata.cn'
+    DB_NAME = 'next-service-engine'
+    DB_HOST = 'localhost'
+    DB_PORT = 3306
+    SQLALCHEMY_DATABASE_URI = 'mysql://{user}:{password}@{host}:{port}/{name}'.format(
+        user=DB_USER,
+        password=DB_PASSWORD,
+        host=DB_HOST,
+        port=DB_PORT,
+        name=DB_NAME,
+    )
+    # SQLALCHEMY_DATABASE_URI = 'sqlite:///%s' % (os.path.join(PROJECT_ROOT, "example.db"))
 
 
 class TestingConfig(BaseConfig):

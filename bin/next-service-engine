@@ -11,7 +11,7 @@ from os.path import abspath, dirname
 choppy_dir = dirname(dirname(abspath(__file__)))
 sys.path.insert(0, choppy_dir)
 
-from api_server.server import run_server
+from api_server.server import manager  # noqa
 
 if __name__ == "__main__":
-    sys.exit(run_server())
+    sys.exit(manager.run())

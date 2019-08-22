@@ -13,6 +13,8 @@ import os
 import sys
 
 from flask import Flask
+from flask_migrate import Migrate
+from api_server.extensions import db
 from werkzeug.contrib.fixers import ProxyFix
 
 
@@ -69,6 +71,8 @@ def create_app(flask_config_name=None, **kwargs):
 
     from . import extensions
     extensions.init_app(app)
+
+    migrate = Migrate(app, db)  # noqa
 
     from . import modules
     modules.init_app(app)

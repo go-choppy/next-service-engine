@@ -10,7 +10,6 @@
 """
 
 from api_server.extensions.api import api_v1
-from flask_restplus import Namespace
 
 
 def init_app(app, **kwargs):
@@ -18,9 +17,6 @@ def init_app(app, **kwargs):
     """
 
     # Touch underlying modules
-    from . import resources
+    from . import models, resources  # noqa
 
     api_v1.add_namespace(resources.api)
-
-
-api = Namespace('plugins', description='Choppy report related operations')

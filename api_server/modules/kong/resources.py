@@ -14,7 +14,7 @@ from flask_restplus import Resource
 from . import api
 
 
-logger = logging.getLogger(__file__)
+logger = logging.getLogger(__name__)
 
 
 @api.route('/services')

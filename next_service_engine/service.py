@@ -7,7 +7,7 @@ from next_service_engine.exceptions import ValidationError
 from next_service_engine.plugin import BasePlugin
 
 
-class PluginInstance:
+class Service:
     """
     Parse plugin call code and execute it.
     """
@@ -44,10 +44,11 @@ class PluginInstance:
 
     def generate(self):
         # e.g. ["<script id='plot' src=''>", "</script>"]
+        plugin = self.load_plugin(self.plugin_name, self.plugin_kwargs)
         try:
-            plugin = self.load_plugin(self.plugin_name, self.plugin_kwargs)
-            code_lst = plugin.run()
+            plugin.run()
             success = True
+            code = plugin.gen_iframe_code()
         except Exception as err:
             import traceback
             kwargs_str = ', '.join('%s=%r' % x for x in self.plugin_kwargs.items())
@@ -66,19 +67,18 @@ Arguments:
 </code></pre>
 </div>""".format(class_name='alert-danger', err=str(err),
                  plugin_name=self.plugin_name, plugin_kwargs=kwargs_str)
-            self.logger.debug("Generate code for %s error: %s" % (self.plugin_name, str(err)))
             self.logger.debug(traceback.format_exc())
-            print(traceback.format_exc())
+
             self.logger.warning("Generate code for %s error: %s" % (self.plugin_name, str(err)))
-            code_lst = [code, ]
             success = False
 
         plugin.metadata.update({
-            "message": code_lst
+            "status": "SUBMITTED" if success else "FAILED",
+            "message": code,
         })
 
         resp = {
-            "message": code_lst,
+            "message": code,
             "success": success,
             "metadata": plugin.metadata
         }

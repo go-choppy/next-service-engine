@@ -10,7 +10,7 @@
 """
 
 from api_server.extensions.api import api_v1
-from flask_restplus import Namespace
+from api_server.extensions.api import Namespace
 
 
 def init_app(app, **kwargs):

@@ -10,14 +10,16 @@
 """
 
 from copy import deepcopy
-from flask_restplus import Api
+from .api import Api
+from .namespace import Namespace  # noqa
+from .http_exceptions import abort  # noqa
 
 
 api_v1 = Api(
     version='v1.0',
-    title="The API Service for Plugin Engine.",
+    title="The API Service for Next Service Engine.",
     description=(
-        "This documentation describes the Plugin Engine API."
+        "This documentation describes the Next Service Engine API."
     ),
 )
 

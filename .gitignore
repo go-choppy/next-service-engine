@@ -6,4 +6,4 @@ next_service_engine.egg-info
 .vscode-counter
 .eggs/
 .Rhistory
-static
+/static/

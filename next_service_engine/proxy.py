@@ -115,7 +115,7 @@ def status(kong):
 def registry_service_route(kong, upstream_url, uuid_as_path):
     """Create Route Associated to a Specific Service.
 
-    uuid_as_path: command md5 as a service name or route path.
+    uuid_as_path: service uuid as a service name or route path.
     """
     # Clean old route and service.
     delete_service_route(uuid_as_path)
@@ -229,3 +229,9 @@ def update_service(kong, upstream_url, uuid_as_path):
         "url": upstream_url
     }
     kong.put("/services/%s" % uuid_as_path, json=json)
+
+
+def set_proxy_url(access_url, uuid_as_path):
+    proxy_url = registry_service_route(access_url, uuid_as_path)
+    proxy_url = proxy_url.strip('/') + '/'
+    return proxy_url

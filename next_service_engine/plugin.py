@@ -11,12 +11,11 @@ import requests
 import logging
 import collections
 import pkg_resources
-from next_service_engine.docker_mgmt import Docker
 from next_service_engine.utils import (check_dir, copy_and_overwrite,
                                        BashColors, get_candidate_name,
                                        find_free_port, get_local_abs_fpath)
 from next_service_engine.file_mgmt import OSS
-from next_service_engine.request_mgmt import requests_retry_session
+from next_service_engine.process_mgmt import create_process_manager
 
 
 class Reader:
@@ -79,7 +78,6 @@ class BasePlugin:
         :param: net_dir: plugin used it to get relative network path for all files that are needed by html. if net_dir is None, plugin will upload all files to qiniu and get a qiniu url.
         :param: config: flask config object.
         """
-        self.net_dir = net_dir
         # Parse args from markdown new syntax. e.g.
         # @scatter_plot(a=1, b=2, c=3)
         # kwargs = {'a': 1, 'b': 2, 'c': 3}
@@ -99,23 +97,27 @@ class BasePlugin:
         self.sync_ftp = config.get("SYNC_FTP")
         self.protocol = config.get("PROTOCOL")
         self.domain = config.get("DOMAIN")
-        self.enable_iframe = config.get("ENABLE_IFRAME")
         self.wait_server_seconds = config.get("WAIT_SERVER_SECONDS")
         self.backoff_factor = config.get("BACKOFF_FACTOR")
         self.static_url = config.get("STATIC_URL")
         self.enable_docker = config.get("ENABLE_DOCKER")
 
-        # Process Manager
-        if self.enable_docker:
-            from next_service_engine.process_mgmt import DockerProcess
-            self.Process = DockerProcess
-        else:
-            from next_service_engine.process_mgmt import ChildProcess
-            self.circus = None
-            self.Process = ChildProcess
+        self.logger = logging.getLogger('next-service-engine.plugin')
 
-        self.logger = logging.getLogger('choppy.next-service-engine.plugin')
+        # The target_id will help to index html component position.
+        self.target_id = str(uuid.uuid1())
 
+        # All plugin args need to check before next step.
+        self._wrapper_check_args()
+
+        # rendered js code
+        self._rendered_js = []
+
+        # Set reader for README.md
+        self.reader = self.set_help()
+
+        # Working directory
+        self.net_dir = net_dir
         # Fix bug: use plugin name as global dir name instead of random file name
         #          for saving all files from a plugin.
         self.plugin_data_dir = os.path.join(self.net_dir, self.plugin_name)
@@ -135,9 +137,6 @@ class BasePlugin:
         for dir in self.ftype2dir.values():
             check_dir(dir, skip=True, force=True)
 
-        # The target_id will help to index html component position.
-        self.target_id = str(uuid.uuid1())
-
         # The index db for saving key:real_path pairs.
         self._index_db = [{
             'type': 'directory',
@@ -145,29 +144,29 @@ class BasePlugin:
             'value': value
         } for key, value in self.ftype2dir.items()]
 
-        # All plugin args need to check before next step.
-        self._wrapper_check_args()
+        self.src_code_dir = os.path.join(self.plugin_dir, self.plugin_name)
+        self.server_root = os.path.join(self.net_dir, 'server')
+        check_dir(self.server_root, skip=True)
 
-        # rendered js code
-        self._rendered_js = []
-
-        # Set reader for README.md
-        self.reader = self.set_help()
+        if self.is_server:
+            self.workdir = os.path.join(self.server_root, '%s_%s' % (self.plugin_name, get_candidate_name()))
+        else:
+            self.workdir = self.plugin_data_dir
 
         # write metadata to plugin.db
         command = '@{}({})'.format(self.plugin_name, self._get_args(**self.context))
         self.metadata = {
-            "name": self.plugin_name,
-            "command": command,
-            "command_md5": self._md5("command"),
+            "plugin_name": self.plugin_name,
+            "plugin_command": command,
+            # Make the service unique
+            "service_uuid": self._md5(command + str(uuid.uuid1())),
             "is_server": self.is_server,
-            "container_id": None,
             "process_id": None,
             "access_url": None,
             "proxy_url": None,
-            "workdir": None,
-            "active": False,
-            "message": None,
+            "workdir": self._strip_prefix(self.workdir, self.net_dir),
+            "src_code_dir": self._strip_prefix(self.src_code_dir, self.net_dir),
+            "status": False
         }
 
     @classmethod
@@ -217,7 +216,7 @@ class BasePlugin:
             self.logger.debug('Get template files: %s' % str(all_files))
             for file in all_files:
                 # e.g. css/bootstrap.min.css
-                key = file.replace(templ_dir, '').strip('/')
+                key = self._strip_prefix(file, templ_dir, root=False)
                 _, file_ext = os.path.splitext(key)
                 ftype = self.get_ftype(file_ext.strip('.'))
                 # Skip not supported file type.
@@ -697,19 +696,6 @@ class BasePlugin:
     def plotly(self):
         pass
 
-    def docker(self):
-        if self.docker_image:
-            docker = Docker()
-            port = find_free_port()
-            docker_obj = docker.run_docker(self.docker_image, {}, ports={'3838/tcp': port})
-            id = docker_obj.id
-            access_url = '{protocol}://{domain}:{port}'.format(protocol=self.protocol,
-                                                               domain=self.domain,
-                                                               port=port)
-            return id, access_url
-        else:
-            return None, None
-
     def update_context(self, **kwargs):
         new_context = {}
         for key, value in kwargs.items():
@@ -723,18 +709,16 @@ class BasePlugin:
 
     def server(self):
         if self.plugin_dir:
-            src_code_dir = os.path.join(self.plugin_dir, self.plugin_name)
-            server_root = os.path.join(self.net_dir, 'server')
-            check_dir(server_root, skip=True)
-
-            process = self.Process(command_dir=src_code_dir, workdir=server_root)
+            process = create_process_manager(command_dir=self.src_code_dir, workdir=self.workdir,
+                                             enable_docker=self.enable_docker,
+                                             main_program_name=self.plugin_name)
             port = find_free_port()
             updated_context = self.update_context(**self.context)
-            process_id = process.run_command(self.metadata.get("command_md5"), domain=self.domain, port=port, **updated_context)
+            process_id = process.run_command(self.metadata.get("service_uuid"), domain=self.domain, port=port, **updated_context)
             access_url = '{protocol}://{domain}:{port}'.format(protocol=self.protocol,
                                                                domain=self.domain,
                                                                port=port)
-            return process_id, access_url, process.workdir
+            return process_id, access_url, self.workdir
         else:
             return None, None, None
 
@@ -743,39 +727,30 @@ class BasePlugin:
         md5.update(string.encode(encoding='utf-8'))
         return md5.hexdigest()
 
-    def _get_proxy_url(self, access_url):
-        from next_service_engine.proxy import registry_service_route
-        proxy_url = registry_service_route(access_url, self.metadata['command_md5'])
-        proxy_url = proxy_url.strip('/') + '/'
-        return proxy_url
-
     def _get_args(self, **kwargs):
         sorted_kwargs = collections.OrderedDict(sorted(kwargs.items()))
         return ', '.join('%s=%r' % x for x in sorted_kwargs.items())
 
-    def _strip_prefix(self, string, prefix):
-        return '/' + string.replace(prefix, '').strip('/')
+    def _strip_prefix(self, string, prefix, root=True):
+        path = string.replace(prefix, '').strip('/')
+        if root:
+            return '/' + path
+        else:
+            return path
 
     def _launch_server_plugin(self):
-        container_id, access_url = self.docker()
-        if container_id and access_url:
-            proxy_url = self._get_proxy_url(access_url)
-            self._set_metadata("container_id", container_id)
-            self._set_metadata("access_url", access_url)
-            # TODO: add workdir for a docker container
-            # metadata['workdir'] = self._strip_prefix(workdir, self.net_dir)
-            self._set_metadata("proxy_url", proxy_url)
-        else:
-            process_id, access_url, workdir = self.server()
-            proxy_url = self._get_proxy_url(access_url)
-            self._set_metadata("process_id", process_id)
-            self._set_metadata("access_url", access_url)
-            self._set_metadata("workdir", self._strip_prefix(workdir, self.net_dir))
-            self._set_metadata("proxy_url", proxy_url)
+        from next_service_engine.proxy import set_proxy_url
+
+        process_id, access_url, workdir = self.server()
+        proxy_url = set_proxy_url(access_url, self.metadata.get("service_uuid"))
+
+        self._set_metadata("process_id", process_id)
+        self._set_metadata("access_url", access_url)
+        self._set_metadata("proxy_url", proxy_url)
 
         self.logger.info("Launching plugin server(%s) successfully, Serving on %s.\n" % (self.plugin_name, proxy_url))
 
-        return proxy_url, workdir
+        return proxy_url
 
     def index_js_lst(self, js_lst):
         javascript = self._get_index_lst(js_lst, 'js')
@@ -914,37 +889,17 @@ class BasePlugin:
         """
         pass
 
-    def get_error_log(self, msg=None, logfile=None, msg_type='danger'):
-        error_type = {
-            'danger': 'alert-danger',
-            'warning': 'alert-warning',
-            'info': 'alert-info'
-        }
+    def gen_iframe_code(self):
+        iframe_tag = '<iframe src="{}" seamless frameborder="0" \
+                      scrolling="no" class="iframe" \
+                      name="{}" width="100%"></iframe>'
 
-        def render_code(msg):
-            code = """\
-<div class='alert {}' role='alert'>
-<pre class='highlight'><code>
-{}
-</pre></code>
-</div>""".format(error_type.get(msg_type.lower(), 'alert-warning'), msg)
-            return code
+        iframe = iframe_tag.format(self.metadata.get('access_url'), self.plugin_name)
+        return iframe
 
-        if msg:
-            code = render_code(msg)
-        elif logfile and os.path.isfile(logfile):
-            with open(logfile, 'r') as f:
-                err_msg = f.read()
-                code = render_code(err_msg)
-        else:
-            msg = 'Unknown error: for more information, please contact app developer.'
-            code = render_code(msg)
-
-        return [code, ]
-
-    def _gen_iframe(self, rendered_lst):
+    def _launch_static_plugin(self, rendered_lst):
         """
-        Render html template as a iframe.
+        Render html template as a html file.
         """
         import tempfile
         templ_dir = os.path.join(os.path.abspath(os.path.dirname(__file__)),
@@ -965,14 +920,10 @@ class BasePlugin:
         # Don't worry it will be conflict with the same plugin in same page.
         key = self.plugin_name
         self.set_index(key, temp_file.name, ftype='html')
-        iframe_tag = '<iframe src="{}" seamless frameborder="0" \
-                      scrolling="no" class="iframe" \
-                      name="{}" width="100%"></iframe>'
         access_url = self._gen_static_url(self.get_net_path(key))
         self._set_metadata("access_url", access_url)
 
-        iframe = iframe_tag.format(access_url, self.plugin_name)
-        return iframe
+        return access_url
 
     def _gen_static_url(self, static_file):
         """Get accessable url for static file.
@@ -992,61 +943,31 @@ class BasePlugin:
             if not isinstance(rendered_lst, list):
                 raise NotImplementedError('Plugin does not yet support plotly framework.')
 
-            if self.enable_iframe:
-                iframe = self._gen_iframe(rendered_lst)
-                rendered_lst = [iframe, ]
+            access_url = self._launch_static_plugin(rendered_lst)
 
         elif self.is_server:
-            access_url, workdir = self._launch_server_plugin()
-
-            if workdir:
-                logfile = os.path.join(workdir, 'log')
-            else:
-                logfile = ''
-
-            try:
-                response = requests_retry_session(
-                    delay=self.wait_server_seconds,
-                    backoff_factor=self.backoff_factor
-                ).get(access_url, timeout=10)
-            except Exception as err:
-                self.logger.debug('Try to launch plugin server: %s' % str(err))
-                rendered_lst = self.get_error_log(logfile=logfile)
-            else:
-                if response.status_code == 200:
-                    iframe_tag = '<iframe src="{}" seamless frameborder="0" \
-                                  scrolling="no" class="iframe" \
-                                  name="{}" width="100%"></iframe>'
-                    iframe = iframe_tag.format(access_url, self.plugin_name)
-                    rendered_lst = [iframe, ]
-                else:
-                    rendered_lst = self.get_error_log(logfile=logfile)
+            access_url = self._launch_server_plugin()
         else:
             rendered_lst = self.render(**self._context)
             rendered_lst = self._rendered_js + rendered_lst
             if not isinstance(rendered_lst, list):
                 raise NotImplementedError('You need to implement render method.')
 
-            if self.enable_iframe:
-                iframe = self._gen_iframe(rendered_lst)
-                rendered_lst = [iframe, ]
+            access_url = self._launch_static_plugin(rendered_lst)
 
-        self.logger.debug('Plugin %s inject js code: %s' %
-                          (self.plugin_name, rendered_lst))
-        return rendered_lst
+        return access_url
 
     def run(self):
         """
         Run three stages step by step.
         """
         self.prepare()
-        code_lst = self._wrapper_render()
-        return code_lst
+        self._wrapper_render()
 
     def _get_virtual_path(self, path):
         # When the user call self.get_net_path, the prefix of the path will be self.net_dir
         # So need to add this code.
-        virtual_path = path.replace(self.net_dir, '').strip('/')
+        virtual_path = self._strip_prefix(path, self.net_dir, root=False)
         self.logger.debug('Raw path: %s, virtual_path: %s' %
                           (path, virtual_path))
 
@@ -1097,6 +1018,35 @@ def get_plugins():
     """
     Return a dict of all installed Plugins by name.
     """
-    plugins = pkg_resources.iter_entry_points(group='choppy.plugins')
+    plugins = pkg_resources.iter_entry_points(group='next_service_engine.plugins')
 
     return dict((plugin.name, plugin) for plugin in plugins)
+
+
+def get_error_log(msg=None, logfile=None, msg_type='danger'):
+    error_type = {
+        'danger': 'alert-danger',
+        'warning': 'alert-warning',
+        'info': 'alert-info'
+    }
+
+    def render_code(msg):
+        code = """\
+<div class='alert {}' role='alert'>
+<pre class='highlight'><code>
+{}
+</pre></code>
+</div>""".format(error_type.get(msg_type.lower(), 'alert-warning'), msg)
+        return code
+
+    if msg:
+        code = render_code(msg)
+    elif logfile and os.path.isfile(logfile):
+        with open(logfile, 'r') as f:
+            err_msg = f.read()
+            code = render_code(err_msg)
+    else:
+        msg = 'Unknown error: for more information, please contact app developer.'
+        code = render_code(msg)
+
+    return [code, ]
