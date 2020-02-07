@@ -40,7 +40,7 @@ def create_app(flask_config_name=None, **kwargs):
 
     env_flask_config_name = os.getenv('FLASK_CONFIG')
     if not env_flask_config_name and flask_config_name is None:
-        flask_config_name = 'local'
+        flask_config_name = 'development'
     elif flask_config_name is None:
         flask_config_name = env_flask_config_name
     else:

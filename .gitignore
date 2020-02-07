@@ -9,3 +9,4 @@ next_service_engine.egg-info
 /static/
 *.pyc
 dist
+*.db

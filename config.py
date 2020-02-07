@@ -111,19 +111,19 @@ class DevelopmentConfig(BaseConfig):
     DOMAIN = '192.168.0.12'
     ENABLE_SWAGGER = True
     # MYSQL
-    DB_USER = 'root'
-    DB_PASSWORD = 'HJJ@nordata.cn'
-    DB_NAME = 'next-service-engine'
-    DB_HOST = 'localhost'
-    DB_PORT = 3306
-    SQLALCHEMY_DATABASE_URI = 'mysql://{user}:{password}@{host}:{port}/{name}'.format(
-        user=DB_USER,
-        password=DB_PASSWORD,
-        host=DB_HOST,
-        port=DB_PORT,
-        name=DB_NAME,
-    )
-    # SQLALCHEMY_DATABASE_URI = 'sqlite:///%s' % (os.path.join(PROJECT_ROOT, "example.db"))
+    # DB_USER = 'root'
+    # DB_PASSWORD = 'HJJ@nordata.cn'
+    # DB_NAME = 'next-service-engine'
+    # DB_HOST = 'localhost'
+    # DB_PORT = 3306
+    # SQLALCHEMY_DATABASE_URI = 'mysql://{user}:{password}@{host}:{port}/{name}'.format(
+    #     user=DB_USER,
+    #     password=DB_PASSWORD,
+    #     host=DB_HOST,
+    #     port=DB_PORT,
+    #     name=DB_NAME,
+    # )
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///%s' % (os.path.join(PROJECT_ROOT, "example.db"))
 
 
 class TestingConfig(BaseConfig):
