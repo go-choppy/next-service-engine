@@ -21,7 +21,7 @@ setup(
     zip_safe=False,
     platforms='any',
     include_package_data=True,
-    packages=get_packages("next_service_engine"),
+    packages=get_packages("next_service_engine") + get_packages("api_server"),
     keywords='Service Engine, Interactive Plot, Multimedia, Web Component',
     install_requires=[
         'Alembic==0.8.10',
@@ -51,6 +51,16 @@ setup(
         'webargs==5.5.0',
         'Werkzeug==0.16.1'
     ],
+    extras_require={
+        'dev': [
+            'setuptools',
+            'wheel',
+            'twine',
+            'pytest',
+            'pytest-pep8',
+            'pytest-cov'
+        ]
+    },
     classifiers=[
         'Development Status :: 1 - Alpha',
         'Environment :: Web Environment',
@@ -61,7 +71,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "next-service-engine = api_server.server:run_server"
+            "next-service-engine = api_server.server:runserver"
         ],
     }
 )

@@ -65,5 +65,9 @@ def prodserver(host, port, framework):
         svc.serve_forever()
 
 
+def runserver():
+    sys.exit(manager.run())
+
+
 if __name__ == "__main__":
     sys.exit(manager.run())

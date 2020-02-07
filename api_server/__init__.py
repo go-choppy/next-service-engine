@@ -19,10 +19,10 @@ from werkzeug.contrib.fixers import ProxyFix
 
 
 CONFIG_NAME_MAPPER = {
-    'development': 'config.DevelopmentConfig',
-    'testing': 'config.TestingConfig',
-    'production': 'config.ProductionConfig',
-    'local': 'local_config.LocalConfig',
+    'development': 'api_server.config.DevelopmentConfig',
+    'testing': 'api_server.config.TestingConfig',
+    'production': 'api_server.config.ProductionConfig',
+    'local': 'api_server.local_config.LocalConfig',
 }
 
 
@@ -55,6 +55,7 @@ def create_app(flask_config_name=None, **kwargs):
 
     try:
         app.config.from_object(CONFIG_NAME_MAPPER[flask_config_name])
+        app.config.from_envvar('FLASK_CONFIG_FILE')
     except ImportError:
         if flask_config_name == 'local':
             app.logger.error(  # pylint: disable=no-member
@@ -65,6 +66,8 @@ def create_app(flask_config_name=None, **kwargs):
             )
             sys.exit(1)
         raise
+    except RuntimeError:
+        app.logger.warning("You may set `FLASK_CONFIG_FILE` environment variable to a custom config file.")
 
     if app.config['REVERSE_PROXY_SETUP']:
         app.wsgi_app = ProxyFix(app.wsgi_app)

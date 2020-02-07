@@ -1,7 +1,11 @@
 # -*- coding:utf-8 -*-
 import os
 
-PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
+from os.path import expanduser
+PROJECT_ROOT = os.path.join(expanduser("~"), ".next-service-engine")
+
+if not os.path.isdir(PROJECT_ROOT):
+    os.mkdir(PROJECT_ROOT)
 
 
 def get_oss_bin():

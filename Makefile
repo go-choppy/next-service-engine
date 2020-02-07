@@ -2,6 +2,15 @@
 
 all: test
 
+pack:
+	python setup.py check && python setup.py sdist
+
+test-upload:
+	python -m twine upload --repository-url https://test.pypi.org/legacy/ dist/*
+
+upload:
+	python -m twine upload dist/*
+
 install-dev:
 	pip install -q -e .[dev]
 
