@@ -33,7 +33,6 @@ requirements:
     - requests
     - multiqc>=1.7
     - sqlalchemy
-    - docker-py
     - psutil
 
 # test:

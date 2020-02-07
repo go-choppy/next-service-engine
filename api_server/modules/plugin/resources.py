@@ -159,10 +159,8 @@ class ServiceView(Resource):
             # Kill process
             process_id = instance.process_id
             static_root = current_app.config.get('STATIC_ROOT')
-            enable_docker = current_app.config.get('ENABLE_DOCKER')
             src_code_dir = os.path.join(static_root, instance.src_code_dir.strip('/'))
-            process = create_process_manager(command_dir=src_code_dir, enable_docker=enable_docker,
-                                             process_id=process_id)
+            process = create_process_manager(command_dir=src_code_dir, process_id=process_id)
             process.stop_process()
         return 'No content', 204
 

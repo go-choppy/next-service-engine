@@ -7,3 +7,5 @@ next_service_engine.egg-info
 .eggs/
 .Rhistory
 /static/
+*.pyc
+dist

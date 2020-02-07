@@ -63,11 +63,6 @@ def prodserver(host, port, framework):
         logger.success('Running Server: %s:%s' % (host, port))
         svc = WSGIServer((host, port), flask_app)
         svc.serve_forever()
-    elif framework == "bjoern":
-        import bjoern
-        logger.success("Starting bjoern based server")
-        logger.success('Running Server: %s:%s' % (host, port))
-        bjoern.run(flask_app, host, port, reuse_port=True)
 
 
 if __name__ == "__main__":

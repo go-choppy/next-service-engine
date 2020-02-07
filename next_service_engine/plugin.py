@@ -68,8 +68,6 @@ class BasePlugin:
     4. server mode
     5. multiqc mode
     """
-    docker_image = None
-
     def __init__(self, context, net_dir, config):
         """
         Initialize BasePlugin class.
@@ -100,7 +98,6 @@ class BasePlugin:
         self.wait_server_seconds = config.get("WAIT_SERVER_SECONDS")
         self.backoff_factor = config.get("BACKOFF_FACTOR")
         self.static_url = config.get("STATIC_URL")
-        self.enable_docker = config.get("ENABLE_DOCKER")
 
         self.logger = logging.getLogger('next-service-engine.plugin')
 
@@ -710,7 +707,6 @@ class BasePlugin:
     def server(self):
         if self.plugin_dir:
             process = create_process_manager(command_dir=self.src_code_dir, workdir=self.workdir,
-                                             enable_docker=self.enable_docker,
                                              main_program_name=self.plugin_name)
             port = find_free_port()
             updated_context = self.update_context(**self.context)

@@ -83,15 +83,6 @@ class BaseConfig(object):
     STATIC_ROOT = os.path.join(PROJECT_ROOT, 'static')
     STATIC_URL = 'http://localhost:5000'
 
-    # Docker
-    ENABLE_DOCKER = False
-    # unix:///var/run/docker.sock or tcp://127.0.0.1:1234
-    DOCKER_ENGINE = {
-        'localhost': 'unix:///var/run/docker.sock',
-        # 'worker01': 'tcp://192.192.192.1:8000',
-    }
-    DOCKER_TIMEOUT = 15
-
     # Swagger
     ENABLE_SWAGGER = False
 
